@@ -1,4 +1,4 @@
-module github.com/paceperspective/googlesecret
+module github.com/blueambertech/googlesecret
 
 go 1.21.1
 

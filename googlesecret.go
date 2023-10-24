@@ -5,38 +5,37 @@ import (
 	"fmt"
 	"hash/crc32"
 
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	gsecretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	"github.com/blueambertech/secretmanager"
 )
 
-type Secret struct {
-	Version string
-	Name    string
-	Value   string
+type Manager struct {
+	projectID string
 }
 
-func New(ctx context.Context, projectID, secretName, version string) (*Secret, error) {
-	client, err := secretmanager.NewClient(ctx)
+func NewManager(projectID string) secretmanager.SecretManager {
+	return &Manager{
+		projectID: projectID,
+	}
+}
+
+func (gsm *Manager) Get(ctx context.Context, key string) (interface{}, error) {
+	client, err := gsecretmanager.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create secretmanager client: %w", err)
 	}
 	defer client.Close()
 
-	resName := fmt.Sprintf("projects/%s/secrets/%s/versions/%s", projectID, secretName, version)
-
+	resName := fmt.Sprintf("projects/%s/secrets/%s/versions/%s", gsm.projectID, key, "latest")
 	v, err := getSecretValue(ctx, client, resName)
 	if err != nil {
 		return nil, err
 	}
-
-	return &Secret{
-		Version: version,
-		Name:    secretName,
-		Value:   v,
-	}, nil
+	return v, nil
 }
 
-func getSecretValue(ctx context.Context, client *secretmanager.Client, resourceName string) (string, error) {
+func getSecretValue(ctx context.Context, client *gsecretmanager.Client, resourceName string) (string, error) {
 	req := &secretmanagerpb.AccessSecretVersionRequest{
 		Name: resourceName,
 	}
